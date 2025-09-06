@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Digital Footprint — Clarity (Offline)</title>
+<style>
+  :root{
+    --accent: #3366ff;
+    --accent-2: #254bdb;
+    --muted: #475569;
+    --glass: rgba(255,255,255,0.92);
+    --card: #ffffff;
+    --good: #27ae60;
+    --warn: #f39c12;
+    --bad: #e74c3c;
+    --shadow: 0 12px 40px rgba(2,6,23,0.45);
+  }
+  html,body { height:100%; margin:0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background: #071026; color:#072033; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+
+  /* Simple offline "digital world" background made with SVG gradient/lines */
+  .bg-svg {
+    position: fixed; inset: 0; z-index:-2;
+    background: radial-gradient(circle at 10% 10%, rgba(77,102,255,0.12), transparent 8%),
+                radial-gradient(circle at 90% 80%, rgba(37,75,219,0.12), transparent 12%);
+  }
+  .grid-visual {
+    position: fixed; inset:0; z-index:-1; pointer-events:none;
+    display:block; opacity:0.25;
+    background-image: radial-gradient(circle at 10% 30%, rgba(255,255,255,0.02), transparent 8%),
+      linear-gradient(0deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));
+    mix-blend-mode: screen;
+    background-size: cover;
+  }
+
+  /* Site container */
+  .site { max-width:1200px; margin:28px auto; padding:18px; }
+
+  /* Header */
+  header { display:flex; align-items:center; justify-content:space-between; gap:12px; background: linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); padding:12px 16px; border-radius:12px; box-shadow: var(--shadow); color:white; backdrop-filter: blur(6px); border:1px solid rgba(255,255,255,0.02); }
+  .brand { display:flex; align-items:center; gap:12px; }
+  /* logo with dark blue square background to match theme */
+  .logo { width:56px; height:56px; border-radius:12px; display:grid; place-items:center; font-weight:800; color:white; background:#0b1a40; box-shadow:0 8px 28px rgba(37,75,219,0.25); font-size:18px; }
+  .logo svg { width:34px; height:34px; fill:#e74c3c; }
+  h1 { margin:0; font-size:20px; color:white; }
+  .tag { font-size:12px; color:rgba(255,255,255,0.9) }
+
+  nav { display:flex; gap:8px; align-items:center; }
+  .btn { padding:9px 12px; border-radius:10px; cursor:pointer; border:1px solid rgba(255,255,255,0.06); background:transparent; color:white; font-weight:700; }
+  .btn.primary { background: linear-gradient(90deg,var(--accent),var(--accent-2)); box-shadow:0 10px 30px rgba(37,75,219,0.18); border:none; }
+  .btn.ghost { background:transparent; border:1px solid rgba(255,255,255,0.06); color:rgba(255,255,255,0.9); }
+  .btn.small { padding:6px 8px; font-size:13px; }
+
+  /* Main card */
+  .card-main { margin-top:18px; background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); padding:20px; border-radius:14px; box-shadow: var(--shadow); border:1px solid rgba(255,255,255,0.03); }
+
+  .hero { display:flex; gap:20px; align-items:flex-start; }
+  .hero-left { flex:1 }
+  .hero-right { width:360px; }
+
+  .big-title { font-size:28px; font-weight:800; color:white; margin:0 0 8px; letter-spacing:-0.4px; }
+  .lead { color:rgba(255,255,255,0.9); margin-bottom:10px; }
+
+  /* informational boxes */
+  .info-grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:12px; }
+  .info-box { background:var(--card); padding:12px; border-radius:10px; box-shadow: 0 6px 18px rgba(2,6,23,0.06); color:#072033; border:1px solid rgba(2,8,23,0.04); }
+  .info-box h3 { margin:0 0 6px; color:var(--accent-2); }
+  .muted { color:var(--muted); font-size:14px; line-height:1.45; }
+
+  /* FAQ - improved styles */
+  .faq { margin-top:14px; }
+  .faq-item { margin-bottom:10px; border-radius:10px; overflow:hidden; border:1px solid rgba(2,8,23,0.08); background:#ffffff; }
+  .faq-q { padding:12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; background:#f5f7ff; color:#072033; font-weight:600; transition: background .15s ease, transform .08s ease; }
+  .faq-q:hover { background:#e8edff; transform: translateY(-1px); }
+  .faq-q .muted { color: var(--accent-2); font-weight:700; }
+  .faq-a { display:none; padding:12px; background:#ffffff; color:#475569; line-height:1.45; }
+  .faq-item.open .faq-a { display:block; }
+
+  /* Side right */
+  .side-card { background:var(--card); padding:12px; border-radius:10px; margin-bottom:10px; box-shadow:0 8px 26px rgba(2,6,23,0.06); color:#072033; border:1px solid rgba(2,8,23,0.04); }
+
+  /* pages */
+  .page { display:none; margin-top:14px; }
+  .page.active { display:block; animation:fadeIn .36s ease both; }
+  @keyframes fadeIn { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none} }
+
+  /* Form */
+  .form-row { margin:8px 0; }
+  input[type="text"], input[type="email"] { width:100%; padding:10px 12px; border-radius:8px; border:1px solid rgba(2,8,23,0.06); box-shadow:none; font-size:14px; }
+
+  /* Quiz cards and options */
+  .quiz-card { background:var(--card); padding:12px; border-radius:12px; margin-bottom:12px; box-shadow:0 8px 20px rgba(2,6,23,0.06); border:1px solid rgba(2,8,23,0.05); transform-origin:center; transition:transform .18s ease, box-shadow .18s ease; }
+  .quiz-card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(2,6,23,0.09); }
+  .q-title { font-weight:800; margin-bottom:8px; color:var(--accent-2) }
+  .option { display:flex; align-items:center; gap:10px; padding:10px; border-radius:10px; border:1px solid rgba(2,8,23,0.04); margin:8px 0; cursor:pointer; transition:all .15s; background:#fbfdff; }
+  .option:hover { transform: translateY(-3px); box-shadow:0 10px 24px rgba(2,6,23,0.06); }
+  .option input { transform:scale(1.05); }
+  .option.selected { background: linear-gradient(90deg, rgba(51,102,255,0.06), rgba(37,75,219,0.03)); border-color: rgba(37,75,219,0.15); }
+
+  /* result circle */
+  .result-wrap { display:flex; gap:20px; align-items:center; }
+  .ring { width:160px; height:160px; display:grid; place-items:center; border-radius:999px; background:linear-gradient(180deg,#fff,#fbfdff); box-shadow: 0 10px 30px rgba(2,6,23,0.06); }
+  .score-num { font-size:28px; font-weight:800; color:#072033; }
+
+  /* progress ring animation via SVG stroke-dashoffset */
+  .progress-svg { transform: rotate(-90deg); }
+
+  /* suggestions */
+  .suggestions { display:grid; grid-template-columns: repeat(2,1fr); gap:12px; margin-top:12px; }
+  .suggestion-card { background:var(--card); padding:12px; border-radius:10px; box-shadow:0 10px 30px rgba(2,6,23,0.06); color:#072033; border:1px solid rgba(2,8,23,0.04); }
+  .suggestion-card h4 { margin:0 0 8px; color:var(--accent-2); }
+
+  /* history */
+  .history-list { max-height:300px; overflow:auto; }
+  .history-item { padding:10px; background:var(--card); border-radius:10px; margin-bottom:8px; display:flex; justify-content:space-between; gap:8px; border:1px solid rgba(2,8,23,0.04); }
+
+  /* chatbot */
+  .chat-btn { position:fixed; right:26px; bottom:26px; z-index:999; width:64px; height:64px; border-radius:18px; background:linear-gradient(90deg,var(--accent),var(--accent-2)); box-shadow:0 18px 50px rgba(37,75,219,0.2); display:grid; place-items:center; color:white; font-weight:700; cursor:pointer; border:none; }
+  .chat-window { position:fixed; right:26px; bottom:100px; width:360px; max-width:calc(100% - 32px); background:var(--card); border-radius:12px; box-shadow:0 22px 60px rgba(2,6,23,0.5); overflow:hidden; display:flex; flex-direction:column; z-index:999; }
+  .chat-header { background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:white; padding:12px; display:flex; align-items:center; gap:10px; justify-content:space-between; }
+  .face { width:44px; height:44px; border-radius:10px; background:#fff; display:grid; place-items:center; position:relative; }
+  .eye { width:8px; height:8px; background:#072033; border-radius:50%; position:absolute; top:18px; transition:transform .15s linear; }
+  .eye.left { left:14px; }
+  .eye.right { right:14px; }
+  .eye.blink { transform: scaleY(0.1); }
+  .chat-body { padding:12px; height:300px; overflow:auto; background:#fbfdff; }
+  .chat-input { display:flex; gap:8px; padding:10px; border-top:1px solid rgba(2,8,23,0.04); }
+  .chat-input input { flex:1; padding:8px 10px; border-radius:8px; border:1px solid rgba(2,8,23,0.06); }
+  .msg { margin:8px 0; max-width:78%; padding:10px 12px; border-radius:12px; }
+  .msg.bot { background:#f1f6ff; color:#072033; }
+  .msg.user { background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:white; margin-left:auto; text-align:right; }
+
+  /* small screens */
+  @media (max-width:980px){
+    .info-grid{ grid-template-columns: 1fr; }
+    .hero { flex-direction:column; }
+    .hero-right{ width:100% }
+    .suggestions { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- decorative backgrounds -->
+<div class="bg-svg"></div>
+<div class="grid-visual"></div>
+
+<div class="site">
+  <header>
+    <div class="brand">
+      <!-- Logo replaced with inline fingerprint SVG on dark-blue square -->
+      <div class="logo" title="Digital Footprint — Clarity">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+          <!-- simplified stylized fingerprint -->
+          <path d="M12 2a7 7 0 0 0-7 7v4a7 7 0 0 0 14 0V9a7 7 0 0 0-7-7zm0 2a5 5 0 0 1 5 5v4a5 5 0 0 1-10 0V9a5 5 0 0 1 5-5zm0 4a1 1 0 0 0-1 1v4a1 1 0 0 0 2 0V9a1 1 0 0 0-1-1z"/>
+        </svg>
+      </div>
+
+      <div>
+        <h1>Digital Footprint — Clarity</h1>
+        <div class="tag">Understand · Improve · Protect</div>
+      </div>
+    </div>
+
+    <nav>
+      <button class="btn" onclick="showSection('home')">Home</button>
+      <button class="btn" onclick="showSection('home', true)">About</button>
+      <button class="btn primary" onclick="openNamePage()">Take Quiz</button>
+      <button class="btn" onclick="openHistoryPage()">History</button>
+      <button class="btn small" onclick="toggleChat()"><span style="margin-right:6px">🤖</span>Clarity Bot</button>
+    </nav>
+  </header>
+
+  <main class="card-main">
+
+    <!-- HOME / LONG CONTENT -->
+    <section id="home" class="page active">
+      <div class="hero">
+        <div class="hero-left">
+          <div style="margin-bottom:12px">
+            <div class="big-title">Welcome to <span style="color:var(--accent)">Digital Footprint — Clarity</span></div>
+            <div class="lead">A friendly, offline-first tool that helps you understand your online exposure and gives tailored steps to improve your privacy and security.</div>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-box">
+              <h3>What is a Digital Footprint?</h3>
+              <p class="muted">All the traces you leave while using the internet — social posts, photos, app permissions, search history, and more. These traces can reveal personal patterns and sensitive details.</p>
+            </div>
+            <div class="info-box">
+              <h3>Why it matters</h3>
+              <p class="muted">Employers, scammers, and advertisers can infer things from your footprint. Small changes (like strong passwords and 2FA) give big protection gains.</p>
+            </div>
+            <div class="info-box">
+              <h3>How this app helps</h3>
+              <p class="muted">Quick quiz, personalized feedback, and a local-only history per email. No servers — your data stays on your browser unless you export it yourself.</p>
+            </div>
+            <div class="info-box">
+              <h3>Who should use it?</h3>
+              <p class="muted">Everyone — from teens posting photos to adults using online banking. The app is beginner-friendly and actionable.</p>
+            </div>
+          </div>
+
+          <div style="margin-top:14px">
+            <div class="info-box">
+              <h3>History & Context</h3>
+              <p class="muted">Websites and apps grew quickly, and we started leaving ever-more detailed traces. Early social networks emphasized sharing; today's challenge is controlling what is shared. This tool aims to make that control approachable.</p>
+            </div>
+          </div>
+
+          <div class="faq" style="margin-top:12px">
+            <h3 style="color:var(--accent-2)">Frequently Asked Questions</h3>
+
+            <div class="faq-item">
+              <div class="faq-q" onclick="toggleFAQ(this)" role="button" tabindex="0">
+                <span>Is my data uploaded?</span><span class="muted">+</span>
+              </div>
+              <div class="faq-a">No — everything is stored locally in your browser. Each email's history is stored locally and only visible from the same browser.</div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-q" onclick="toggleFAQ(this)" role="button" tabindex="0">
+                <span>How private is the history?</span><span class="muted">+</span>
+              </div>
+              <div class="faq-a">Private to this browser and the email you use. If someone uses the same browser and email, they will see the same history — so protect your device.</div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-q" onclick="toggleFAQ(this)" role="button" tabindex="0">
+                <span>Can I delete my history?</span><span class="muted">+</span>
+              </div>
+              <div class="faq-a">Yes — go to History while logged in and clear entries individually or all at once.</div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-q" onclick="toggleFAQ(this)" role="button" tabindex="0">
+                <span>How does the quiz work?</span><span class="muted">+</span>
+              </div>
+              <div class="faq-a">The quiz asks about your online habits. Each answer contributes to a score that reflects your digital footprint risk. After submitting, you’ll get personalized tips.</div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-q" onclick="toggleFAQ(this)" role="button" tabindex="0">
+                <span>What is a digital footprint?</span><span class="muted">+</span>
+              </div>
+              <div class="faq-a">Your digital footprint is all the traces you leave online, including posts, photos, app permissions, and browsing habits. It shapes what others can infer about you.</div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-q" onclick="toggleFAQ(this)" role="button" tabindex="0">
+                <span>Is this app safe for beginners?</span><span class="muted">+</span>
+              </div>
+              <div class="faq-a">Absolutely. The app is designed to be beginner-friendly, providing simple explanations and actionable advice without overwhelming technical terms.</div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="hero-right">
+          <div class="side-card">
+            <h3 style="margin:0 0 8px 0; color:var(--accent-2)">Quick Start</h3>
+            <div class="muted">1) Click Take Quiz → 2) Enter name & email → 3) Answer honestly → 4) Review suggestions & save progress.</div>
+            <div style="margin-top:12px"><button class="btn primary" onclick="openNamePage()">Start Quiz</button></div>
+          </div>
+
+          <div class="side-card">
+            <h3 style="margin:0 0 8px 0; color:var(--accent-2)">Top Tips</h3>
+            <ol class="muted" style="padding-left:16px; margin:0">
+              <li>Use unique passwords + a password manager</li>
+              <li>Enable 2FA on important accounts</li>
+              <li>Limit app permissions to what is necessary</li>
+            </ol>
+          </div>
+
+          <div class="side-card">
+            <h3 style="margin:0 0 8px 0; color:var(--accent-2)">Privacy Note</h3>
+            <div class="muted">This app is offline-first. Data stays in localStorage unless you explicitly export it via the History page download button.</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- NAME PAGE -->
+    <section id="namePage" class="page" aria-hidden="true">
+      <div class="card-main" style="padding:16px">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px">
+          <div>
+            <h2 style="margin:0;color:var(--accent-2)">Let's get you set up</h2>
+            <div class="muted">We show your history only for the email you provide on this browser.</div>
+          </div>
+          <div>
+            <button class="btn ghost" onclick="showSection('home')">Cancel</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="card-main">
+          <div class="form-row">
+            <label class="muted">Full name</label>
+            <input id="inputName" type="text" placeholder="e.g., Alex Johnson" autocomplete="name">
+          </div>
+          <div class="form-row">
+            <label class="muted">Email</label>
+            <input id="inputEmail" type="email" placeholder="you@example.com" autocomplete="email">
+          </div>
+
+          <div style="margin-top:12px; display:flex; gap:10px;">
+            <button class="btn primary" onclick="beginQuiz()">Proceed to quiz</button>
+            <button class="btn" onclick="showSection('home')">Back</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUIZ PAGE -->
+    <section id="quizPage" class="page" aria-hidden="true">
+      <div style="display:flex; justify-content:space-between; align-items:center">
+        <h2 style="margin:0;color:var(--accent-2)">Quiz — quick & interactive</h2>
+        <div>
+          <button class="btn small" onclick="logout()">Logout</button>
+          <button class="btn ghost" onclick="showSection('home')">Cancel</button>
+        </div>
+      </div>
+
+      <div id="quizList" style="margin-top:12px"></div>
+
+      <div style="margin-top:12px; display:flex; gap:10px;">
+        <button class="btn primary" onclick="submitQuiz()">Submit</button>
+        <button class="btn" onclick="showSection('home')">Cancel</button>
+      </div>
+    </section>
+
+    <!-- RESULT PAGE -->
+    <section id="resultPage" class="page" aria-hidden="true">
+      <div style="display:flex; gap:20px; align-items:center;">
+        <div class="ring" style="width:200px;height:200px;">
+          <!-- SVG circle for animated progress -->
+          <svg viewBox="0 0 120 120" class="progress-svg" width="160" height="160">
+            <defs>
+              <linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#27ae60"/><stop offset="1" stop-color="#1f9b4d"/></linearGradient>
+              <linearGradient id="g2" x1="0" x2="1"><stop offset="0" stop-color="#f39c12"/><stop offset="1" stop-color="#d48806"/></linearGradient>
+              <linearGradient id="g3" x1="0" x2="1"><stop offset="0" stop-color="#e74c3c"/><stop offset="1" stop-color="#d02f2f"/></linearGradient>
+            </defs>
+            <circle cx="60" cy="60" r="52" stroke="#eef2ff" stroke-width="12" fill="none"></circle>
+            <!-- dynamic arc -->
+            <circle id="arc" cx="60" cy="60" r="52" stroke="url(#g1)" stroke-width="12" stroke-linecap="round" fill="none" stroke-dasharray="326.7" stroke-dashoffset="326.7"></circle>
+            <text id="arcText" x="60" y="64" text-anchor="middle" font-size="18" font-weight="800" fill="#072033">0%</text>
+          </svg>
+        </div>
+
+        <div style="flex:1">
+          <h3 id="resGreeting" style="margin:0;color:var(--accent-2)"></h3>
+          <div id="resTag" class="muted" style="margin-top:6px"></div>
+          <div id="resLong" class="muted" style="margin-top:12px"></div>
+          <div class="suggestions" id="resSuggestions" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:10px;">
+        <button class="btn primary" onclick="openHistoryPage()">View My History</button>
+        <button class="btn" onclick="showSection('home')">Home</button>
+      </div>
+    </section>
+
+    <!-- HISTORY PAGE -->
+    <section id="historyPage" class="page" aria-hidden="true">
+      <div style="display:flex; justify-content:space-between; align-items:center">
+        <div>
+          <h2 style="margin:0;color:var(--accent-2)">My History</h2>
+          <div class="muted">Your saved quiz attempts (same browser & email).</div>
+        </div>
+        <div>
+          <button class="btn small" onclick="logout()">Logout</button>
+          <button class="btn ghost" onclick="showSection('home')">Home</button>
+        </div>
+      </div>
+
+      <div style="margin-top:12px" class="card-main">
+        <div id="historyArea">
+          <div id="noHistory" class="muted">No attempts yet. Take the quiz to store attempts here.</div>
+          <div id="historyList" class="history-list"></div>
+        </div>
+
+        <div style="margin-top:12px; display:flex; gap:8px;">
+          <button class="btn" onclick="clearMyHistory()">Clear My History</button>
+          <button class="btn" onclick="downloadMyHistory()">Download My History</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer style="text-align:center; color:rgba(255,255,255,0.75); margin-top:18px;">
+    © <span id="year"></span> Digital Footprint — Clarity · Offline version
+  </footer>
+</div>
+
+<!-- Chat button & window -->
+<button id="chatToggle" class="chat-btn" onclick="toggleChat()" title="Open Clarity Bot">CB</button>
+
+<div id="chatWindow" class="chat-window" style="display:none" aria-hidden="true">
+  <div class="chat-header">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div class="face" id="faceBox">
+        <div class="eye left" id="eyeL"></div>
+        <div class="eye right" id="eyeR"></div>
+      </div>
+      <div style="color:white;">
+        <div style="font-weight:800">Clarity Bot</div>
+        <div style="font-size:12px; opacity:0.95">Your privacy helper</div>
+      </div>
+    </div>
+    <div>
+      <button class="btn small" onclick="closeChat()">Close</button>
+    </div>
+  </div>
+
+  <div id="chatBody" class="chat-body"></div>
+  <div class="chat-input">
+    <input id="chatInput" placeholder="Say hi — try: 'how to enable 2FA' or 'what is a digital footprint?'" onkeydown="if(event.key==='Enter'){sendChat();}" />
+    <button class="btn primary" onclick="sendChat()">Send</button>
+  </div>
+</div>
+
+<script>
+/* ---------- App data ---------- */
+const QUESTIONS = [
+  { q: "Do you use the same password for more than one important account (email, bank)?", tag: "passwords" },
+  { q: "Would you accept a friend request from someone you don't know?", tag: "friends" },
+  { q: "Do you often click links in messages when you're unsure who sent them?", tag: "links" },
+  { q: "Have you posted photos that show your home, workplace, or daily routine?", tag: "photos" },
+  { q: "Do you use public Wi-Fi to do banking or shopping?", tag: "wifi" },
+  { q: "Do you use a password manager or strong unique passwords?", tag: "passwords_good" },
+  { q: "Do you enable two-factor authentication on your primary email or banking?", tag: "2fa" },
+  { q: "Do you quickly accept app permissions without checking (camera, location)?", tag: "permissions" },
+  { q: "Do you clear old apps or unused accounts regularly?", tag: "cleanup" },
+  { q: "Do you check the privacy settings on your social profiles at least once a year?", tag: "settings" }
+];
+const OPTIONS = ["Yes","Sometimes","No"]; // interactive only
+const SCORE_MAP = {"Yes":2,"Sometimes":1,"No":0};
+const STORAGE_KEY = "df_clarity_offline_map"; // map: email -> [attempts]
+document.getElementById('year').textContent = new Date().getFullYear();
+
+/* ---------- Navigation helpers ---------- */
+function showSection(id, scroll=false){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById(id);
+  if(el){ el.classList.add('active'); if(scroll) el.scrollIntoView({behavior:"smooth"}); }
+  // clear name/email when showing home
+  if(id === 'home'){ const n = document.getElementById('inputName'); const e = document.getElementById('inputEmail'); if(n) n.value=''; if(e) e.value=''; sessionStorage.removeItem('df_clarity_current'); }
+}
+
+/* ---------- Name & Email flow ---------- */
+function openNamePage(){
+  showSection('namePage');
+  const inName = document.getElementById('inputName');
+  if(inName) inName.focus();
+}
+function beginQuiz(){
+  const name = (document.getElementById('inputName').value || '').trim();
+  const email = (document.getElementById('inputEmail').value || '').trim().toLowerCase();
+  if(!name || !validateEmail(email)){
+    alert('Please enter a valid name and email.');
+    return;
+  }
+  sessionStorage.setItem('df_clarity_current', JSON.stringify({name, email}));
+  showQuiz();
+}
+function validateEmail(e){ return /\S+@\S+\.\S+/.test(e); }
+
+/* ---------- Quiz UI ---------- */
+function showQuiz(){
+  showSection('quizPage');
+  const container = document.getElementById('quizList');
+  container.innerHTML = '';
+  QUESTIONS.forEach((item, idx) => {
+    const card = document.createElement('div'); card.className = 'quiz-card';
+    card.innerHTML = `<div class="q-title">${idx+1}. ${escapeHtml(item.q)}</div>`;
+    OPTIONS.forEach(opt => {
+      const optWrap = document.createElement('label');
+      optWrap.className = 'option';
+      optWrap.innerHTML = `<input type="radio" name="q${idx}" value="${opt}"> <span>${opt}</span>`;
+      optWrap.addEventListener('click', ()=> {
+        // mark selected visually
+        Array.from(card.querySelectorAll('.option')).forEach(o => o.classList.remove('selected'));
+        optWrap.classList.add('selected');
+        // small bounce animation
+        optWrap.animate([{transform:'translateY(0)'},{transform:'translateY(-6px)'},{transform:'translateY(0)'}], {duration:260, easing:'cubic-bezier(.2,.8,.2,1)'});
+      });
+      card.appendChild(optWrap);
+    });
+    container.appendChild(card);
+  });
+  scrollToTopOf('#quizPage');
+}
+
+function scrollToTopOf(selector){
+  document.querySelector(selector).scrollIntoView({behavior:'smooth'});
+}
+
+/* ---------- Submit & scoring ---------- */
+function submitQuiz(){
+  const cur = getCurrentUser();
+  if(!cur){ alert('Session expired — please re-enter your name and email.'); showSection('namePage'); return; }
+  let score = 0;
+  const answers = {};
+  for(let i=0;i<QUESTIONS.length;i++){
+    const sel = document.querySelector(`input[name="q${i}"]:checked`);
+    const val = sel ? sel.value : null;
+    answers[QUESTIONS[i].tag] = val;
+    if(val) score += SCORE_MAP[val] || 0;
+  }
+  const total = QUESTIONS.length * 2;
+  const percent = Math.round((score/total)*100);
+  const level = percent <= 30 ? 'low' : percent <= 70 ? 'medium' : 'high';
+
+  // save to local history per email
+  saveAttempt(cur.email, { id: Date.now(), score: percent, details: answers, date: (new Date()).toLocaleString() });
+
+  // show result UI
+  showSection('resultPage');
+  document.getElementById('resGreeting').textContent = `Hello, ${cur.name}!`;
+  document.getElementById('resTag').textContent = level === 'low' ? 'Low risk — Nice work!' : level === 'medium' ? 'Moderate risk — room to improve' : 'High risk — take action soon';
+  document.getElementById('resLong').textContent = `You scored ${percent}%. Below are suggestions tailored to your answers.`;
+  setArc(percent, level);
+  renderRecommendations(answers, percent);
+  scrollToTopOf('#resultPage');
+}
+
+/* ---------- Progress ring control ---------- */
+const ARC = document.getElementById('arc');
+const ARCTEXT = document.getElementById('arcText');
+function setArc(percent, level){
+  const circleLength = 2 * Math.PI * 52; // r=52
+  const offset = circleLength * (1 - percent/100);
+  if(ARC) {
+    ARC.style.transition = 'stroke-dashoffset 1s cubic-bezier(.2,.9,.2,.9), stroke 0.5s';
+    ARCTEXT.textContent = percent + '%';
+    // choose gradient
+    if(level === 'low'){
+      ARC.setAttribute('stroke','url(#g1)');
+    } else if(level === 'medium'){
+      ARC.setAttribute('stroke','url(#g2)');
+    } else {
+      ARC.setAttribute('stroke','url(#g3)');
+    }
+    // animate by setting dashoffset
+    requestAnimationFrame(() => {
+      ARC.style.strokeDashoffset = offset;
+    });
+  } else {
+    // fallback: set text only
+    if(ARCTEXT) ARCTEXT.textContent = percent + '%';
+  }
+}
+
+/* initialize arc stroke-dasharray/dashoffset */
+(function initArc(){
+  const circleLength = 2 * Math.PI * 52;
+  if(ARC) {
+    ARC.style.strokeDasharray = circleLength;
+    ARC.style.strokeDashoffset = circleLength;
+  }
+})();
+
+/* ---------- Personalized recommendations ---------- */
+function renderRecommendations(details, percent){
+  const out = document.getElementById('resSuggestions');
+  out.innerHTML = '';
+  const recs = buildPersonalizedTips(details, percent);
+  recs.forEach(r=>{
+    const card = document.createElement('div'); card.className = 'suggestion-card';
+    card.innerHTML = `<h4>${escapeHtml(r.title)}</h4><div class="muted">${escapeHtml(r.body)}</div>`;
+    out.appendChild(card);
+  });
+}
+
+function buildPersonalizedTips(details, percent){
+  // We'll create a set of recommendations based on flagged answers
+  const list = [];
+  // Passwords
+  if(details['passwords'] === 'Yes' || details['passwords'] === 'Sometimes'){
+    list.push({ title: 'Use a password manager', body: 'You indicated password reuse or uncertainty. A password manager (e.g., Bitwarden) lets you create unique long passwords and autofills them safely.' });
+    list.push({ title: 'Prioritize your most important accounts', body: 'Start with email and banking: change reused passwords and enable 2FA there first.' });
+  } else if(details['passwords_good'] === 'Yes'){
+    list.push({ title: 'Great password habits', body: 'You use strong/password-manager-like habits. Keep passwords updated periodically and use unique phrases.' });
+  }
+
+  // 2FA
+  if(details['2fa'] !== 'Yes'){
+    list.push({ title: 'Enable Two-Factor Authentication (2FA)', body: '2FA adds a second step for login. Use an authenticator app (Google Authenticator, Authy) when possible; it is more secure than SMS.' });
+  } else {
+    list.push({ title: '2FA enabled — good', body: 'You have 2FA enabled — keep your recovery codes in a safe place and consider using a hardware key for critical accounts.' });
+  }
+
+  // Photos & location
+  if(details['photos'] === 'Yes' || details['permissions'] === 'Yes'){
+    list.push({ title: 'Review photo tags & location', body: 'Avoid posting photos that include exact addresses or regular schedules. Turn off automatic location tagging in your camera/social apps.' });
+  }
+
+  // Links & public wifi
+  if(details['links'] === 'Yes'){
+    list.push({ title: 'Be cautious with links', body: 'If a message feels odd, open sites by typing the address yourself. Avoid entering credentials from email links unless you verify the sender.' });
+  }
+  if(details['wifi'] === 'Yes'){
+    list.push({ title: 'Avoid sensitive tasks on public Wi-Fi', body: 'Public Wi-Fi can be intercepted. Use a trustworthy VPN when necessary or wait until you are on a trusted network.' });
+  }
+
+  // Friend requests / cleanup
+  if(details['friends'] === 'Yes'){
+    list.push({ title: 'Audit connections periodically', body: 'Remove unknown or suspicious accounts and set social profiles to private when possible.' });
+  }
+  if(details['cleanup'] !== 'No'){
+    list.push({ title: 'Remove old apps & accounts', body: 'Old apps may keep permissions. Uninstall ones you no longer use and delete accounts you forgot about.' });
+  }
+
+  // Always include general suggestions
+  list.push({ title: 'Review app permissions', body: 'Check permissions (camera, microphone, location) and turn off anything not necessary.' });
+  list.push({ title: 'Make a simple action plan', body: 'Pick 2 actions (enable 2FA, change 3 reused passwords) and do them this week — small wins compound.' });
+
+  // ensure uniqueness and return top 6
+  const seen = new Set();
+  return list.filter(l => { const k = l.title; if(seen.has(k)) return false; seen.add(k); return true; }).slice(0,6);
+}
+
+/* ---------- Local history storage (per email) ---------- */
+function saveAttempt(email, attempt){
+  const map = loadMap();
+  if(!map[email]) map[email] = [];
+  map[email].push(attempt);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+}
+function loadMap(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) { return {}; }
+}
+function getMyAttempts(email){
+  const m = loadMap(); return (m[email] || []).slice().reverse();
+}
+
+/* ---------- History UI ---------- */
+function openHistoryPage(){
+  const cur = getCurrentUser();
+  if(!cur){ showSection('namePage'); return; }
+  showSection('historyPage');
+  renderHistory();
+}
+function renderHistory(){
+  const cur = getCurrentUser();
+  const area = document.getElementById('historyList');
+  area.innerHTML = '';
+  const items = getMyAttempts(cur.email);
+  document.getElementById('noHistory').style.display = items.length ? 'none' : 'block';
+  items.forEach(it => {
+    const el = document.createElement('div'); el.className = 'history-item';
+    el.innerHTML = `<div><strong>${it.score}%</strong><div class="muted">${it.date}</div></div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn small" onclick='viewAttempt("${it.id}")'>View</button>
+        <button class="btn small" onclick='deleteAttempt("${it.id}")'>Delete</button>
+      </div>`;
+    area.appendChild(el);
+  });
+}
+function viewAttempt(id){ const cur = getCurrentUser(); const list = getMyAttempts(cur.email); const it = list.find(x=>String(x.id)===String(id)); if(!it) return alert('Not found'); alert(`Score: ${it.score}%\nDate: ${it.date}`); }
+function deleteAttempt(id){
+  const cur = getCurrentUser();
+  if(!confirm('Delete this attempt?')) return;
+  const map = loadMap();
+  map[cur.email] = (map[cur.email] || []).filter(x => String(x.id) !== String(id));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+  renderHistory();
+}
+function clearMyHistory(){
+  const cur = getCurrentUser();
+  if(!confirm('Delete ALL your saved attempts on this browser?')) return;
+  const map = loadMap(); delete map[cur.email]; localStorage.setItem(STORAGE_KEY, JSON.stringify(map)); renderHistory();
+}
+function downloadMyHistory(){
+  const cur = getCurrentUser();
+  const data = getMyAttempts(cur.email);
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `df-history-${cur.email}.json`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+/* ---------- Current user helpers ---------- */
+function getCurrentUser(){ try { return JSON.parse(sessionStorage.getItem('df_clarity_current')); } catch(e) { return null; } }
+function logout(){ sessionStorage.removeItem('df_clarity_current'); showSection('namePage'); }
+
+/* ---------- Chatbot: animated face + conversational replies ---------- */
+let chatOpen = false;
+function toggleChat(){ chatOpen ? closeChat() : openChat(); }
+function openChat(){
+  document.getElementById('chatWindow').style.display = 'flex';
+  document.getElementById('chatWindow').setAttribute('aria-hidden','false');
+  chatOpen = true;
+  document.getElementById('chatBody').innerHTML = '';
+  setTimeout(()=> botSay("👋 Hi! I’m Clarity Bot. How may I help you?"), 250);
+  startBlink();
+}
+function closeChat(){
+  document.getElementById('chatWindow').style.display = 'none';
+  document.getElementById('chatWindow').setAttribute('aria-hidden','true');
+  chatOpen = false;
+  stopBlink();
+}
+function botSay(text){ const body = document.getElementById('chatBody'); const el = document.createElement('div'); el.className='msg bot'; el.innerHTML = text; body.appendChild(el); body.scrollTop = body.scrollHeight; }
+function userSay(text){ const body = document.getElementById('chatBody'); const el = document.createElement('div'); el.className='msg user'; el.innerHTML = escapeHtml(text); body.appendChild(el); body.scrollTop = body.scrollHeight; }
+
+function sendChat(){
+  const input = document.getElementById('chatInput');
+  const txt = (input.value || '').trim(); if(!txt) return;
+  userSay(txt); input.value = '';
+  // bot reply (small delay)
+  setTimeout(()=> {
+    const r = chatReply(txt);
+    botSay(r);
+  }, 450 + Math.random()*300);
+}
+
+function chatReply(msg){
+  const m = msg.toLowerCase();
+  if(m.includes('2fa') || m.includes('two factor') || m.includes('two-factor')) return "Use an authenticator app (Authy, Google Authenticator) for stronger 2FA. Save recovery codes in a safe place.";
+  if(m.includes('password')) return "Use unique passwords and consider a password manager to generate/store them. Change reused passwords on email and banking first.";
+  if(m.includes('digital footprint')) return "Your digital footprint is everything you leave online: posts, photos, app permissions, and history. It shapes what others can learn about you.";
+  if(m.includes('wifi') || m.includes('public wi')) return "Public Wi-Fi can be intercepted. Avoid banking on open networks and use a VPN if you need privacy.";
+  if(m.includes('quiz') || m.includes('score')) return "The quiz shows how some habits add to exposure. Lower percent = safer. Follow the personalized suggestions to improve.";
+  if(m.includes('hello') || m.includes('hi')) return "Hi! I'm Clarity Bot. Ask me about 2FA, passwords, public Wi-Fi, app permissions, or the quiz.";
+  return "Try asking things like: 'How to enable 2FA?', 'Are public Wi-Fi safe?', or 'How to manage passwords?'. I'll give actionable tips.";
+}
+
+/* chatbot face blinking */
+let blinkTimer = null;
+function startBlink(){ if(blinkTimer) return; blinkTimer = setInterval(()=>{ blinkEyes(); }, 2800 + Math.random()*1400); }
+function stopBlink(){ clearInterval(blinkTimer); blinkTimer = null; document.getElementById('eyeL').classList.remove('blink'); document.getElementById('eyeR').classList.remove('blink'); }
+function blinkEyes(){ document.getElementById('eyeL').classList.add('blink'); document.getElementById('eyeR').classList.add('blink'); setTimeout(()=>{ document.getElementById('eyeL').classList.remove('blink'); document.getElementById('eyeR').classList.remove('blink'); }, 160); }
+
+/* ---------- FAQ toggle + accessibility ---------- */
+function toggleFAQ(el){
+  try{
+    // allow passing header element or event target
+    const header = el.closest ? (el.closest('.faq-q') || el) : el;
+    const item = header.closest('.faq-item');
+    if(!item) return;
+    const answer = item.querySelector('.faq-a');
+    const sign = header.querySelector('.muted');
+    const isOpen = item.classList.toggle('open');
+    if(answer) answer.style.display = isOpen ? 'block' : 'none';
+    if(sign) sign.textContent = isOpen ? '−' : '+';
+  }catch(e){
+    console.error(e);
+  }
+}
+(function initFAQAccessibility(){
+  const headers = document.querySelectorAll('.faq-item .faq-q');
+  headers.forEach(h => {
+    h.setAttribute('role','button');
+    h.setAttribute('tabindex','0');
+    h.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        toggleFAQ(h);
+      }
+    });
+  });
+})();
+
+/* ---------- small helpers ---------- */
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- utilities to show/hide + initial state ---------- */
+function showSectionDefault(){ showSection('home'); }
+showSectionDefault();
+
+function refreshHistoryIfVisible(){ const cur = getCurrentUser(); if(!cur) return; if(document.getElementById('historyPage').classList.contains('active')) renderHistory(); }
+
+/* view attempt handler used inline */
+window.viewAttempt = viewAttempt;
+window.deleteAttempt = deleteAttempt;
+
+/* small polyfills for inlined handlers needing JSON in attributes */
+function viewAttemptJSON(id){ viewAttempt(id); }
+
+/* make sure arc resets on load */
+window.addEventListener('load', ()=> { setTimeout(()=>{ if(ARC) ARC.style.strokeDashoffset = 2 * Math.PI * 52; }, 40); });
+
+</script>
+</body>
+</html>
